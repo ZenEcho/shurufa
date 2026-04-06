@@ -1,7 +1,8 @@
 use ime_dict::DictionaryProvider;
 use ime_platform_api::{Candidate, CandidatePage, InputMode, PreeditState};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum KeyEvent {
     Char(char),
     Backspace,
@@ -12,7 +13,7 @@ pub enum KeyEvent {
     ToggleInputMode,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct EngineResponse {
     pub consumed: bool,
     pub commit_text: Option<String>,
@@ -21,7 +22,7 @@ pub struct EngineResponse {
     pub input_mode: InputMode,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SessionState {
     pub raw_keys: String,
     pub composition_text: String,
@@ -197,19 +198,29 @@ where
 #[cfg(test)]
 mod tests {
     use super::{ImeEngine, KeyEvent, SessionState};
-    use ime_dict::MemoryDictionary;
+    use ime_dict::{DictionaryProvider, MemoryDictionary};
     use ime_platform_api::InputMode;
 
+    struct EmptyDictionary;
+
+    impl DictionaryProvider for EmptyDictionary {
+        fn search(&self, _code: &str) -> Vec<ime_platform_api::Candidate> {
+            Vec::new()
+        }
+    }
+
     #[test]
-    fn chinese_mode_builds_preedit_and_candidates() {
+    fn chinese_mode_builds_preedit_and_candidates_for_exact_pinyin() {
         let engine = ImeEngine::new(MemoryDictionary);
         let mut session = SessionState::default();
 
-        let response = engine.handle_key_event(&mut session, KeyEvent::Char('S'));
+        let _ = engine.handle_key_event(&mut session, KeyEvent::Char('n'));
+        let response = engine.handle_key_event(&mut session, KeyEvent::Char('i'));
 
         assert!(response.consumed);
-        assert_eq!(response.preedit.composition_text, "s");
-        assert_eq!(response.candidates.items.len(), 2);
+        assert_eq!(response.preedit.composition_text, "ni");
+        assert_eq!(response.candidates.items.len(), 1);
+        assert_eq!(response.candidates.items[0].text, "你");
     }
 
     #[test]
@@ -217,12 +228,42 @@ mod tests {
         let engine = ImeEngine::new(MemoryDictionary);
         let mut session = SessionState::default();
 
-        let _ = engine.handle_key_event(&mut session, KeyEvent::Char('s'));
-        let response = engine.handle_key_event(&mut session, KeyEvent::Number(2));
+        let _ = engine.handle_key_event(&mut session, KeyEvent::Char('n'));
+        let _ = engine.handle_key_event(&mut session, KeyEvent::Char('i'));
+        let response = engine.handle_key_event(&mut session, KeyEvent::Number(1));
 
-        assert_eq!(response.commit_text.as_deref(), Some("settings-center"));
+        assert_eq!(response.commit_text.as_deref(), Some("你"));
         assert!(response.preedit.composition_text.is_empty());
         assert!(response.candidates.items.is_empty());
+    }
+
+    #[test]
+    fn space_commits_first_chinese_candidate_for_exact_code() {
+        let engine = ImeEngine::new(MemoryDictionary);
+        let mut session = SessionState::default();
+
+        for ch in ['n', 'i', 'h', 'a', 'o'] {
+            let _ = engine.handle_key_event(&mut session, KeyEvent::Char(ch));
+        }
+
+        let response = engine.handle_key_event(&mut session, KeyEvent::Space);
+
+        assert_eq!(response.commit_text.as_deref(), Some("你好"));
+        assert!(session.raw_keys.is_empty());
+    }
+
+    #[test]
+    fn enter_without_candidates_commits_raw_keys_as_fallback() {
+        let engine = ImeEngine::new(EmptyDictionary);
+        let mut session = SessionState::default();
+
+        let response = engine.handle_key_event(&mut session, KeyEvent::Char('z'));
+        assert!(response.candidates.items.is_empty());
+
+        let committed = engine.handle_key_event(&mut session, KeyEvent::Enter);
+
+        assert_eq!(committed.commit_text.as_deref(), Some("z"));
+        assert!(session.raw_keys.is_empty());
     }
 
     #[test]

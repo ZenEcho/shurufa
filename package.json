@@ -12,7 +12,13 @@
     "build": "pnpm --filter @shurufa/desktop-settings build",
     "typecheck": "pnpm --filter @shurufa/desktop-settings typecheck",
     "check:rust": "cargo check --manifest-path rust/Cargo.toml",
-    "test:rust": "cargo test --manifest-path rust/Cargo.toml"
+    "test:rust": "cargo test --manifest-path rust/Cargo.toml",
+    "test:typing": "powershell -ExecutionPolicy Bypass -File .\\scripts\\test-typing-mvp.ps1",
+    "verify:mvp": "powershell -ExecutionPolicy Bypass -File .\\scripts\\verify-mvp.ps1",
+    "build:windows-tsf": "cargo build --manifest-path rust/Cargo.toml -p windows-tsf --release",
+    "install:windows-tsf:dev": "powershell -ExecutionPolicy Bypass -File .\\rust\\native\\windows-tsf\\scripts\\install-ime-dev.ps1",
+    "uninstall:windows-tsf:dev": "powershell -ExecutionPolicy Bypass -File .\\rust\\native\\windows-tsf\\scripts\\uninstall-ime-dev.ps1",
+    "test:windows-tsf:mvp": "powershell -ExecutionPolicy Bypass -File .\\scripts\\test-windows-tsf-mvp.ps1"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
