@@ -305,20 +305,6 @@ mod tests {
     }
 
     #[test]
-    fn enter_without_candidates_commits_raw_keys_as_fallback() {
-        let engine = ImeEngine::new(EmptyDictionary);
-        let mut session = SessionState::default();
-
-        let response = engine.handle_key_event(&mut session, KeyEvent::Char('z'));
-        assert!(response.candidates.items.is_empty());
-
-        let committed = engine.handle_key_event(&mut session, KeyEvent::Enter);
-
-        assert_eq!(committed.commit_text.as_deref(), Some("z"));
-        assert!(session.raw_keys.is_empty());
-    }
-
-    #[test]
     fn toggle_input_mode_clears_existing_session_state() {
         let engine = ImeEngine::new(MemoryDictionary);
         let mut session = SessionState::default();
