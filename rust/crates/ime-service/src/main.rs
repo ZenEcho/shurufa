@@ -141,9 +141,10 @@ fn handle_json_command(service: &ServiceRuntime, args: &[String]) -> Result<bool
         "run-typing-demo" => {
             let session = service.create_typing_session()?;
             let initial_mode = format!("{:?}", session.input_mode.clone());
-            let first = service.process_typing_key(session, KeyEvent::Char('s'))?;
+            let first = service.process_typing_key(session, KeyEvent::Char('n'))?;
+            let second = service.process_typing_key(first.session.clone(), KeyEvent::Char('i'))?;
             let selected =
-                service.process_typing_key(first.session.clone(), KeyEvent::Number(1))?;
+                service.process_typing_key(second.session.clone(), KeyEvent::Number(1))?;
             let toggled =
                 service.process_typing_key(selected.session.clone(), KeyEvent::ToggleInputMode)?;
             let english =
@@ -151,8 +152,8 @@ fn handle_json_command(service: &ServiceRuntime, args: &[String]) -> Result<bool
 
             print_json(&TypingDemoResult {
                 initial_mode,
-                first_preedit: first.response.preedit.composition_text,
-                first_candidate: first
+                first_preedit: second.response.preedit.composition_text,
+                first_candidate: second
                     .response
                     .candidates
                     .items
@@ -192,12 +193,15 @@ fn main() -> Result<()> {
     let engine = ImeEngine::new(MemoryDictionary);
     let mut session = SessionState::default();
 
-    let _ = engine.handle_key_event(&mut session, KeyEvent::Char('s'));
+    let _ = engine.handle_key_event(&mut session, KeyEvent::Char('n'));
+    let _ = engine.handle_key_event(&mut session, KeyEvent::Char('i'));
     let _ = engine.handle_key_event(&mut session, KeyEvent::Char('h'));
+    let _ = engine.handle_key_event(&mut session, KeyEvent::Char('a'));
+    let _ = engine.handle_key_event(&mut session, KeyEvent::Char('o'));
     let response = engine.handle_key_event(&mut session, KeyEvent::Space);
 
     println!(
-        "书入法服务脚手架已启动。default_schema={}, commit={:?}",
+        "Shurufa service scaffold ready. default_schema={}, commit={:?}",
         config.input.default_schema, response.commit_text
     );
 
@@ -205,7 +209,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    println!("书入法开发服务运行中。按 Ctrl+C 停止。");
+    println!("Shurufa dev service running. Press Ctrl+C to stop.");
 
     loop {
         thread::sleep(Duration::from_secs(60));

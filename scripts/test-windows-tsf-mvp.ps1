@@ -18,6 +18,9 @@ $tipKey = "HKCU:\Software\Microsoft\CTF\TIP\$clsid"
 
 Write-Host '1/4 Build Windows TSF release DLL'
 cargo build --manifest-path .\rust\Cargo.toml -p windows-tsf --release
+if ($LASTEXITCODE -ne 0) {
+  throw 'Failed to build windows-tsf release DLL.'
+}
 
 if (-not (Test-Path -LiteralPath $dllPath)) {
   throw "Missing DLL: $dllPath"
@@ -26,6 +29,9 @@ if (-not (Test-Path -LiteralPath $dllPath)) {
 if ($Install) {
   Write-Host '2/4 Install development IME'
   powershell -ExecutionPolicy Bypass -File .\rust\native\windows-tsf\scripts\install-ime-dev.ps1
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Failed to install development IME.'
+  }
 } else {
   Write-Host '2/4 Skip install'
 }
@@ -38,11 +44,11 @@ Write-Host ("Profile GUID: {0}" -f $profileGuid)
 
 Write-Host '4/4 Manual typing checklist'
 Write-Host '  1. Open Settings > Time & language > Language & region.'
-Write-Host '  2. Confirm that 书入法输入法 appears in the input method list.'
-Write-Host '  3. Switch to 书入法输入法.'
+Write-Host '  2. Confirm that Shurufa Input Method appears in the input method list.'
+Write-Host '  3. Switch to Shurufa Input Method.'
 Write-Host '  4. Open Notepad or VS Code.'
-Write-Host '  5. Type s, then press 1. Expected commit: shurufa.'
-Write-Host '  6. Press F2, then type x. Expected commit: x.'
+Write-Host '  5. Type ni, then press 1. Expected commit: Chinese character for ni.'
+Write-Host '  6. Type nihao, then press Space. Expected commit: Chinese phrase for nihao.'
 Write-Host '  7. Check Backspace, Space, Enter, and Escape behavior.'
 
 Write-Host ''

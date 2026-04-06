@@ -994,7 +994,8 @@ mod tests {
         let mut session = SessionState::default();
 
         host.bind_text_context(&context).expect("bind text context");
-        let _response = host.process_key(&mut session, KeyEvent::Char('s'));
+        let _response = host.process_key(&mut session, KeyEvent::Char('n'));
+        let _response = host.process_key(&mut session, KeyEvent::Char('i'));
         host.clear_pending_write_requests();
         let _response = host.process_key(&mut session, KeyEvent::Number(1));
 
@@ -1002,7 +1003,7 @@ mod tests {
             host.pending_write_requests(),
             vec![
                 TextWriteRequest::EndComposition,
-                TextWriteRequest::CommitText("shurufa".to_string()),
+                TextWriteRequest::CommitText("你".to_string()),
             ]
         );
     }

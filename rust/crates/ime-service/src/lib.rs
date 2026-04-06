@@ -217,17 +217,20 @@ mod tests {
             .expect("create typing session");
 
         let snapshot = service
-            .process_typing_key(session, KeyEvent::Char('s'))
+            .process_typing_key(session, KeyEvent::Char('n'))
+            .expect("process typing key");
+        let snapshot = service
+            .process_typing_key(snapshot.session, KeyEvent::Char('i'))
             .expect("process typing key");
 
-        assert_eq!(snapshot.response.preedit.composition_text, "s");
-        assert_eq!(snapshot.session.raw_keys, "s");
+        assert_eq!(snapshot.response.preedit.composition_text, "ni");
+        assert_eq!(snapshot.session.raw_keys, "ni");
 
         let committed = service
             .process_typing_key(snapshot.session, KeyEvent::Number(1))
             .expect("process candidate selection");
 
-        assert_eq!(committed.response.commit_text.as_deref(), Some("shurufa"));
+        assert_eq!(committed.response.commit_text.as_deref(), Some("你"));
         assert!(committed.session.raw_keys.is_empty());
     }
 

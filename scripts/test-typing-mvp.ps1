@@ -30,7 +30,7 @@ function Invoke-ImeServiceJson {
 
 $demo = Invoke-ImeServiceJson -Command 'run-typing-demo'
 Write-Host "Initial mode: $($demo.initial_mode)"
-Write-Host "Preedit after s: $($demo.first_preedit)"
+Write-Host "Preedit after ni: $($demo.first_preedit)"
 Write-Host "First candidate: $($demo.first_candidate)"
 Write-Host "Selected commit: $($demo.selected_commit)"
 Write-Host "Mode after toggle: $($demo.toggled_mode)"

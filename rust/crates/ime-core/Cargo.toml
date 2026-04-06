@@ -8,3 +8,4 @@ version.workspace = true
 ime-dict = { path = "../ime-dict" }
 ime-platform-api = { path = "../ime-platform-api" }
 serde.workspace = true
+
