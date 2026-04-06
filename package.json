@@ -1,0 +1,29 @@
+{
+  "name": "shurufa",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm --filter @shurufa/desktop-settings dev",
+    "dev:desktop": "pnpm --filter @shurufa/desktop-settings dev",
+    "dev:service": "cargo run --manifest-path rust/Cargo.toml -p ime-service",
+    "dev:service:oneshot": "cargo run --manifest-path rust/Cargo.toml -p ime-service -- --oneshot",
+    "dev:all": "concurrently -k -n desktop,service -c blue,green \"pnpm dev:desktop\" \"pnpm dev:service\"",
+    "build": "pnpm --filter @shurufa/desktop-settings build",
+    "typecheck": "pnpm --filter @shurufa/desktop-settings typecheck",
+    "check:rust": "cargo check --manifest-path rust/Cargo.toml",
+    "test:rust": "cargo test --manifest-path rust/Cargo.toml"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

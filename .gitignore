@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-electron/
+out/
+.vite/
+.turbo/
+coverage/
+*.log
+*.tsbuildinfo
+pnpm-debug.log*
+
+target/
+Cargo.lock
+
+.DS_Store
+Thumbs.db

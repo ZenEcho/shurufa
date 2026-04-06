@@ -1,0 +1,27 @@
+[workspace]
+members = [
+    "crates/ime-config",
+    "crates/ime-platform-api",
+    "crates/ime-logging",
+    "crates/ime-db",
+    "crates/ime-dict",
+    "crates/ime-core",
+    "crates/ime-ipc",
+    "crates/ime-service",
+    "native/windows-tsf",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+version = "0.1.0"
+
+[workspace.dependencies]
+anyhow = "1.0.100"
+rusqlite = { version = "0.37.0", features = ["bundled"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+tempfile = "3.23.0"
+thiserror = "2.0.17"
+tracing = "0.1.41"

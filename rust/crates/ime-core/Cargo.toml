@@ -1,0 +1,10 @@
+[package]
+name = "ime-core"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+ime-dict = { path = "../ime-dict" }
+ime-platform-api = { path = "../ime-platform-api" }
+

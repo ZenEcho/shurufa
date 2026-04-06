@@ -1,0 +1,14 @@
+[package]
+name = "ime-service"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+ime-config = { path = "../ime-config" }
+ime-core = { path = "../ime-core" }
+ime-db = { path = "../ime-db" }
+ime-dict = { path = "../ime-dict" }
+ime-logging = { path = "../ime-logging" }
+
