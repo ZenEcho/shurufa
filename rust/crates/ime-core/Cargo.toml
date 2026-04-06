@@ -7,4 +7,4 @@ version.workspace = true
 [dependencies]
 ime-dict = { path = "../ime-dict" }
 ime-platform-api = { path = "../ime-platform-api" }
-
+serde.workspace = true

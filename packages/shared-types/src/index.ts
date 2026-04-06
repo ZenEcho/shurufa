@@ -1,16 +1,54 @@
 export type SettingsSectionId =
   | 'overview'
-  | 'schemas'
+  | 'typing'
+  | 'input'
   | 'candidates'
+  | 'appearance'
   | 'dictionary'
   | 'history'
   | 'hotkeys'
   | 'logs'
+  | 'about'
 
 export interface NavSection {
   id: SettingsSectionId
   label: string
   description: string
+}
+
+export interface GeneralConfig {
+  startupWithSystem: boolean
+  locale: string
+}
+
+export interface InputConfig {
+  defaultSchema: string
+  englishModeByDefault: boolean
+  candidatePageSize: number
+}
+
+export interface AppearanceConfig {
+  theme: string
+  fontSize: number
+  candidateLayout: string
+}
+
+export interface LoggingConfig {
+  level: string
+  redactInputContent: boolean
+}
+
+export interface AppConfig {
+  general: GeneralConfig
+  input: InputConfig
+  appearance: AppearanceConfig
+  logging: LoggingConfig
+}
+
+export interface RuntimeStatus {
+  serviceStatus: string
+  activePlatform: string
+  defaultSchema: string
 }
 
 export interface MetricItem {
@@ -23,33 +61,139 @@ export interface DashboardSnapshot {
   metrics: MetricItem[]
 }
 
-export interface RuntimeStatus {
-  serviceStatus: string
-  activePlatform: string
-  defaultSchema: string
+export type TypingKeyKind =
+  | 'char'
+  | 'backspace'
+  | 'enter'
+  | 'space'
+  | 'escape'
+  | 'number'
+  | 'toggleInputMode'
+
+export type InputModeValue = 'Chinese' | 'English'
+
+export interface TypingKeyInput {
+  kind: TypingKeyKind
+  char?: string
+  number?: number
+}
+
+export interface TypingCandidate {
+  id: string
+  text: string
+  annotation: string | null
+  hotkey: string | null
+}
+
+export interface TypingCandidatePage {
+  items: TypingCandidate[]
+  pageIndex: number
+  hasNextPage: boolean
+}
+
+export interface TypingPreeditState {
+  compositionText: string
+  cursor: number
+}
+
+export interface TypingResponse {
+  consumed: boolean
+  commitText: string | null
+  preedit: TypingPreeditState
+  candidates: TypingCandidatePage
+  inputMode: InputModeValue
+}
+
+export interface TypingSessionState {
+  rawKeys: string
+  compositionText: string
+  selectedIndex: number
+  candidates: TypingCandidate[]
+  inputMode: InputModeValue
+}
+
+export interface TypingSnapshot {
+  session: TypingSessionState
+  response: TypingResponse
+}
+
+export interface UserDictionaryEntry {
+  id: number
+  schemaId: string
+  code: string
+  word: string
+  weight: number
+  source: string
+  createdAt: number
+  updatedAt: number
+}
+
+export interface NewUserDictionaryEntry {
+  schemaId: string
+  code: string
+  word: string
+  weight: number
+  source: string
+}
+
+export interface InputHistoryEntry {
+  id: number
+  schemaId: string
+  inputCode: string
+  committedText: string
+  usageCount: number
+  lastUsedAt: number
+  createdAt: number
+}
+
+export interface HotkeyEntry {
+  id: string
+  action: string
+  accelerator: string
+  scope: string
+  enabled: boolean
+  updatedAt: number
+}
+
+export interface ErrorLogEntry {
+  id: number
+  level: string
+  module: string
+  message: string
+  contextJson: string | null
+  createdAt: number
+}
+
+export const defaultConfig: AppConfig = {
+  general: {
+    startupWithSystem: false,
+    locale: 'zh-CN'
+  },
+  input: {
+    defaultSchema: 'pinyin',
+    englishModeByDefault: false,
+    candidatePageSize: 9
+  },
+  appearance: {
+    theme: 'system',
+    fontSize: 16,
+    candidateLayout: 'vertical'
+  },
+  logging: {
+    level: 'info',
+    redactInputContent: true
+  }
 }
 
 export const sectionMeta: NavSection[] = [
-  { id: 'overview', label: '总览', description: '系统状态、核心指标与运行概览' },
-  { id: 'schemas', label: '输入方案', description: '拼音、五笔与扩展输入方案管理' },
-  { id: 'candidates', label: '候选面板', description: '候选样式、布局和上屏行为' },
-  { id: 'dictionary', label: '词库管理', description: '用户词库、第三方词库与短语片段' },
-  { id: 'history', label: '输入历史', description: '常用词、最近输入与学习结果' },
-  { id: 'hotkeys', label: '快捷键', description: '切换键位、候选选择与冲突检查' },
-  { id: 'logs', label: '日志调试', description: '错误日志、性能追踪与诊断导出' }
+  { id: 'overview', label: '总览', description: '运行状态与关键指标' },
+  { id: 'typing', label: '输入测试', description: '直接打字验证 Rust 输入内核闭环' },
+  { id: 'input', label: '输入设置', description: '默认方案与输入行为配置' },
+  { id: 'candidates', label: '候选设置', description: '候选分页与候选展示行为' },
+  { id: 'appearance', label: '外观设置', description: '主题、字号与界面外观' },
+  { id: 'dictionary', label: '用户词典', description: '管理用户词条与短语数据' },
+  { id: 'history', label: '输入历史', description: '查看输入记录与学习数据' },
+  { id: 'hotkeys', label: '快捷键', description: '管理快捷键绑定与冲突检查' },
+  { id: 'logs', label: '日志中心', description: '查看运行日志与诊断信息' },
+  { id: 'about', label: '关于与调试', description: '产品信息与调试入口' }
 ]
-
-export const dashboardSnapshot: DashboardSnapshot = {
-  metrics: [
-    { label: '运行平台', value: 'Windows · macOS · Linux', hint: '三端使用原生宿主接入系统输入链路' },
-    { label: '核心语言', value: 'Rust', hint: '状态机、候选引擎、词频学习和数据库访问' },
-    { label: '本地存储', value: 'SQLite', hint: '配置、用户词库、历史和日志索引统一持久化' },
-    { label: '设置中心', value: 'Electron + Vue 3', hint: '跨平台设置、词库和调试体验' }
-  ]
-}
-
-export const runtimeStatus: RuntimeStatus = {
-  serviceStatus: 'Scaffold Ready',
-  activePlatform: 'desktop-settings',
-  defaultSchema: 'pinyin'
-}

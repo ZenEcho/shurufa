@@ -1,7 +1,8 @@
 use ime_dict::DictionaryProvider;
 use ime_platform_api::{Candidate, CandidatePage, InputMode, PreeditState};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum KeyEvent {
     Char(char),
     Backspace,
@@ -12,7 +13,7 @@ pub enum KeyEvent {
     ToggleInputMode,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct EngineResponse {
     pub consumed: bool,
     pub commit_text: Option<String>,
@@ -21,7 +22,7 @@ pub struct EngineResponse {
     pub input_mode: InputMode,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SessionState {
     pub raw_keys: String,
     pub composition_text: String,
@@ -197,8 +198,16 @@ where
 #[cfg(test)]
 mod tests {
     use super::{ImeEngine, KeyEvent, SessionState};
-    use ime_dict::MemoryDictionary;
+    use ime_dict::{DictionaryProvider, MemoryDictionary};
     use ime_platform_api::InputMode;
+
+    struct EmptyDictionary;
+
+    impl DictionaryProvider for EmptyDictionary {
+        fn search(&self, _code: &str) -> Vec<ime_platform_api::Candidate> {
+            Vec::new()
+        }
+    }
 
     #[test]
     fn chinese_mode_builds_preedit_and_candidates() {
@@ -236,5 +245,58 @@ mod tests {
         let response = engine.handle_key_event(&mut session, KeyEvent::Char('x'));
         assert_eq!(response.commit_text.as_deref(), Some("x"));
         assert!(response.candidates.items.is_empty());
+    }
+
+    #[test]
+    fn escape_clears_active_composition() {
+        let engine = ImeEngine::new(MemoryDictionary);
+        let mut session = SessionState::default();
+
+        let _ = engine.handle_key_event(&mut session, KeyEvent::Char('s'));
+        let response = engine.handle_key_event(&mut session, KeyEvent::Escape);
+
+        assert!(response.consumed);
+        assert!(response.preedit.composition_text.is_empty());
+        assert!(session.raw_keys.is_empty());
+        assert!(session.candidates.is_empty());
+    }
+
+    #[test]
+    fn backspace_on_empty_session_is_not_consumed() {
+        let engine = ImeEngine::new(MemoryDictionary);
+        let mut session = SessionState::default();
+
+        let response = engine.handle_key_event(&mut session, KeyEvent::Backspace);
+
+        assert!(!response.consumed);
+        assert!(session.raw_keys.is_empty());
+    }
+
+    #[test]
+    fn enter_without_candidates_commits_raw_keys_as_fallback() {
+        let engine = ImeEngine::new(EmptyDictionary);
+        let mut session = SessionState::default();
+
+        let response = engine.handle_key_event(&mut session, KeyEvent::Char('z'));
+        assert!(response.candidates.items.is_empty());
+
+        let committed = engine.handle_key_event(&mut session, KeyEvent::Enter);
+
+        assert_eq!(committed.commit_text.as_deref(), Some("z"));
+        assert!(session.raw_keys.is_empty());
+    }
+
+    #[test]
+    fn toggle_input_mode_clears_existing_session_state() {
+        let engine = ImeEngine::new(MemoryDictionary);
+        let mut session = SessionState::default();
+
+        let _ = engine.handle_key_event(&mut session, KeyEvent::Char('s'));
+        let response = engine.handle_key_event(&mut session, KeyEvent::ToggleInputMode);
+
+        assert_eq!(response.input_mode, InputMode::English);
+        assert!(session.raw_keys.is_empty());
+        assert!(session.candidates.is_empty());
+        assert!(response.preedit.composition_text.is_empty());
     }
 }

@@ -1,24 +1,45 @@
 # Findings
 
-## Repository Snapshot
-- 根目录包含 `apps/`、`packages/`、`rust/`、`docs/`，并已有 `shurufa.db`。
-- 仓库当前不是 Git working tree，`git status` 和 `git log` 不可用。
-- README 明确指出：Electron 是设置中心；`windows-tsf` 仍是 scaffold，尚未注册为真实系统 IME。
+## 仓库现状
+- 仓库不是空白项目，已经具备 Electron 设置中心、Rust 输入核心、SQLite 初始化和 Windows TSF 宿主骨架。
+- 前端栈固定为 Electron + Vue 3 + TypeScript + Naive UI + UnoCSS，当前已实际接入。
+- 后端以 Rust workspace 组织，核心目录在 `rust\crates` 和 `rust\native\windows-tsf`。
 
-## Docs
-- `docs/ime-architecture.md`
-- `docs/current-implemented-features.md`
+## 已验证能力
+- 设置中心已不再使用静态示例数据，配置读写真实走 Rust 服务和 SQLite。
+- 用户词典、输入历史、热键、日志页面已具备最小真实数据读写能力。
+- 项目内已新增“输入测试”页，可直接键盘输入并驱动 Rust `ime-core`：
+  - 字母输入
+  - Backspace
+  - Enter
+  - Space
+  - Escape
+  - 数字选词
+  - 中英文切换
+- `windows-tsf` 当前已具备：
+  - TSF 注册 manifest
+  - composition 生命周期状态
+  - 文本上下文桥接请求队列
+  - DLL 自注册导出骨架
 
-## Verified Code State
-- `apps/desktop-settings` 当前仅实现 `ime:get-dashboard`、`ime:get-runtime-status` 两个 IPC 接口，返回共享包里的静态示例数据。
-- 桌面端还未接入 Naive UI，当前 UI 主要是自定义 Vue SFC + UnoCSS。
-- `ime-core` 已完成字符输入、Backspace、Enter、Space、Escape、数字选词、中英文切换、preedit 和候选返回，以及无候选时提交原始编码。
-- `ime-db` 已完成 SQLite schema 初始化和 `app_config` 的读写闭环，但其余业务表尚未有完整 CRUD。
-- `ime-ipc` 只定义了极少量命令枚举，尚未形成真正的 IPC 服务协议层。
-- `ime-logging` 目前仍是占位实现，只打印一条初始化日志。
-- `windows-tsf` 已完成 COM STA、`ITfThreadMgr`、最小 `ITfTextInputProcessor` 生命周期、document/context helper，并能把按键送入 Rust Core；但 `PlatformHost` 侧仍只有日志输出，没有真实编辑上下文映射。
-- `rust/native/macos-imk`、`rust/native/linux-ibus`、`rust/native/linux-fcitx5` 目前只有 README，没有实装代码。
+## 当前边界
+- 还没有真正可安装并可系统切换的 Windows 输入法。
+- `DllGetClassObject` 目前仍是占位返回，尚未提供真实类工厂。
+- `TextWriteRequest` 还没有真正写入 `ITfContext`。
+- 候选窗、光标跟随、焦点变化处理还没接到真实 TSF 编辑上下文。
 
-## Verification
-- `pnpm typecheck` 通过。
-- `cargo test --manifest-path rust/Cargo.toml` 通过，包含 `ime-core`、`ime-db`、`windows-tsf` 的单元测试。
+## 本轮新增事实
+- `windows-tsf` 已声明 `cdylib`，release 构建可生成 `rust\target\release\windows_tsf.dll`。
+- 已新增 DLL 导出：
+  - `DllRegisterServer`
+  - `DllUnregisterServer`
+  - `DllCanUnloadNow`
+  - `DllGetClassObject`
+- 默认 TSF 显示名已改为中文“书入法输入法”。
+- 注册脚本已切到 release DLL + `regsvr32` 的最小链路。
+
+## 仍需优先推进
+1. 真实 COM 类工厂。
+2. 真实 TSF edit session 写回。
+3. 候选窗与 caret 联动。
+4. 系统输入法安装、启用、切换和实机验证。

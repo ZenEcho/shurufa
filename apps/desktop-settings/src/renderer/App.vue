@@ -1,90 +1,92 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import type { DashboardSnapshot, RuntimeStatus, SettingsSectionId } from '@shurufa/shared-types'
-import { sectionMeta } from '@shurufa/shared-types'
-import { AppShell, MetricCard, SectionPanel } from '@shurufa/shared-ui'
+import { computed, onMounted, shallowRef } from 'vue'
+import {
+  NAlert,
+  NConfigProvider,
+  NDialogProvider,
+  NGlobalStyle,
+  NMessageProvider,
+  NNotificationProvider,
+  NSpin
+} from 'naive-ui'
+import { sectionMeta, type SettingsSectionId } from '@shurufa/shared-types'
+import AppShell from './layouts/AppShell.vue'
+import DashboardPage from './pages/DashboardPage.vue'
+import HotkeysPage from './pages/HotkeysPage.vue'
+import InputHistoryPage from './pages/InputHistoryPage.vue'
+import InputSettingsPage from './pages/InputSettingsPage.vue'
+import LogsCenterPage from './pages/LogsCenterPage.vue'
+import PlaceholderPage from './pages/PlaceholderPage.vue'
+import TypingTestPage from './pages/TypingTestPage.vue'
+import UserDictionaryPage from './pages/UserDictionaryPage.vue'
+import { useConfigStore } from './stores/config'
+import { useRuntimeStore } from './stores/runtime'
 
-const dashboard = ref<DashboardSnapshot | null>(null)
-const runtime = ref<RuntimeStatus | null>(null)
-const activeSection = ref<SettingsSectionId>('overview')
+const activeSection = shallowRef<SettingsSectionId>('overview')
+const bootstrapError = shallowRef<string | null>(null)
 
-const metrics = computed(() => dashboard.value?.metrics ?? [])
-const sections = computed(() => sectionMeta)
+const configStore = useConfigStore()
+const runtimeStore = useRuntimeStore()
+
+const isBootstrapping = computed(() => configStore.loading || runtimeStore.loading)
+
+const currentPlaceholder = computed(() => {
+  const section = sectionMeta.find((item) => item.id === activeSection.value)
+
+  return {
+    title: section?.label ?? '页面',
+    description: section?.description ?? '页面正在建设中'
+  }
+})
 
 onMounted(async () => {
-  ;[dashboard.value, runtime.value] = await Promise.all([
-    window.imeApi.getDashboard(),
-    window.imeApi.getRuntimeStatus()
-  ])
+  try {
+    await Promise.all([configStore.load(), runtimeStore.load()])
+  } catch (error) {
+    bootstrapError.value = error instanceof Error ? error.message : '桌面设置中心初始化失败'
+  }
 })
 </script>
 
 <template>
-  <AppShell
-    title="Shurufa"
-    subtitle="跨平台输入法设置中心"
-    :sections="sections"
-    :active-section="activeSection"
-    @select-section="activeSection = $event"
-  >
-    <template #hero>
-      <div class="rounded-7 border border-white/70 bg-white/80 p-6 shadow-[0_20px_70px_rgba(20,33,61,0.08)] backdrop-blur">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div class="space-y-2">
-            <p class="m-0 text-sm uppercase tracking-[0.28em] text-slate">
-              System IME Control Center
-            </p>
-            <h1 class="m-0 text-4xl font-700 text-ink">
-              把输入主链路留给 Rust，把体验交给桌面设置中心。
-            </h1>
-            <p class="m-0 max-w-3xl text-base leading-7 text-slate">
-              当前骨架已经拆分出设置中心、核心服务、平台宿主与数据层，后续可以直接接入 Windows TSF、macOS IMK 和 Linux IBus。
-            </p>
-          </div>
+  <n-config-provider>
+    <n-dialog-provider>
+      <n-notification-provider>
+        <n-message-provider>
+          <n-global-style />
+          <AppShell
+            title="书入法"
+            subtitle="基于 Rust 运行时的 Windows 优先输入法设置中心"
+            :sections="sectionMeta"
+            :active-section="activeSection"
+            :runtime="runtimeStore.runtime"
+            @select-section="activeSection = $event"
+          >
+            <div class="space-y-6">
+              <n-alert v-if="bootstrapError" type="error" :bordered="false">
+                {{ bootstrapError }}
+              </n-alert>
 
-          <div class="min-w-70 rounded-6 bg-ink px-5 py-4 text-white shadow-[0_16px_40px_rgba(20,33,61,0.25)]">
-            <div class="text-xs uppercase tracking-[0.24em] text-white/70">
-              Runtime
+              <div v-if="isBootstrapping" class="flex min-h-[320px] items-center justify-center">
+                <n-spin size="large" description="正在从 Rust 服务加载设置..." />
+              </div>
+
+              <DashboardPage v-else-if="activeSection === 'overview'" />
+              <TypingTestPage v-else-if="activeSection === 'typing'" />
+              <InputSettingsPage v-else-if="activeSection === 'input'" />
+              <UserDictionaryPage v-else-if="activeSection === 'dictionary'" />
+              <InputHistoryPage v-else-if="activeSection === 'history'" />
+              <HotkeysPage v-else-if="activeSection === 'hotkeys'" />
+              <LogsCenterPage v-else-if="activeSection === 'logs'" />
+              <PlaceholderPage
+                v-else
+                :title="currentPlaceholder.title"
+                :description="`${currentPlaceholder.description}，该模块已排入下一轮开发。`"
+              />
             </div>
-            <div class="mt-3 text-2xl font-700">
-              {{ runtime?.serviceStatus ?? 'Loading...' }}
-            </div>
-            <div class="mt-2 text-sm text-white/70">
-              {{ runtime?.activePlatform ?? 'desktop-settings' }} · schema {{ runtime?.defaultSchema ?? 'pinyin' }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <template #default>
-      <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          v-for="metric in metrics"
-          :key="metric.label"
-          :label="metric.label"
-          :value="metric.value"
-          :hint="metric.hint"
-        />
-      </section>
-
-      <div class="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-        <SectionPanel title="当前阶段" eyebrow="Roadmap">
-          <ul class="m-0 space-y-3 pl-5 text-sm leading-7 text-slate">
-            <li>Electron 设置中心已成为跨平台 UI 宿主，后续通过 IPC 对接 Rust service。</li>
-            <li>Rust workspace 已拆分核心、配置、词库、数据库、日志与服务模块。</li>
-            <li>平台原生宿主将分别对接 Windows TSF、macOS IMK、Linux IBus。</li>
-          </ul>
-        </SectionPanel>
-
-        <SectionPanel title="下一步建议" eyebrow="Build Path">
-          <div class="space-y-3 text-sm leading-7 text-slate">
-            <p class="m-0">先打通 Windows TSF 到 Rust Core 的最小闭环：按键输入、候选生成、确认上屏。</p>
-            <p class="m-0">随后把 SQLite 配置、用户词库和日志流接到设置中心里，形成完整开发调试回路。</p>
-          </div>
-        </SectionPanel>
-      </div>
-    </template>
-  </AppShell>
+          </AppShell>
+        </n-message-provider>
+      </n-notification-provider>
+    </n-dialog-provider>
+  </n-config-provider>
 </template>
-

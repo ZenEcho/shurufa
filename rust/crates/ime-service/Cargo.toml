@@ -11,4 +11,10 @@ ime-core = { path = "../ime-core" }
 ime-db = { path = "../ime-db" }
 ime-dict = { path = "../ime-dict" }
 ime-logging = { path = "../ime-logging" }
+ime-ipc = { path = "../ime-ipc" }
+ime-platform-api = { path = "../ime-platform-api" }
+serde.workspace = true
+serde_json.workspace = true
 
+[dev-dependencies]
+tempfile.workspace = true
